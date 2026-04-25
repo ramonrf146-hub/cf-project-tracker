@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CF Project Tracker</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#185FA5" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="CF Tracker" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeede8;
+    --text: #1a1a1a; --text2: #666660; --text3: #999990;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --info-bg: #e6f1fb; --info-text: #185FA5;
+    --success-bg: #eaf3de; --success-text: #3B6D11;
+    --warn-bg: #faeeda; --warn-text: #BA7517;
+    --gray-bg: #f1efe8; --gray-text: #5F5E5A;
+    --danger-text: #A32D2D; --danger-border: rgba(163,45,45,0.3);
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c; --bg2: #2a2a28; --bg3: #333330;
+      --text: #f0efe8; --text2: #aaa99f; --text3: #77766e;
+      --border: rgba(255,255,255,0.12); --border2: rgba(255,255,255,0.22);
+      --info-bg: #0c2a45; --info-text: #85B7EB;
+      --success-bg: #172a08; --success-text: #97C459;
+      --warn-bg: #2e1e04; --warn-text: #EF9F27;
+      --gray-bg: #2c2c28; --gray-text: #B4B2A9;
+      --danger-text: #F09595; --danger-border: rgba(240,149,149,0.3);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg2); color: var(--text); font-size: 16px; min-height: 100vh; }
+  #app { max-width: 680px; margin: 0 auto; padding: 1rem; }
+  h2 { font-size: 18px; font-weight: 500; }
+  h3 { font-size: 15px; font-weight: 500; }
+  p { line-height: 1.6; }
+  button { font-family: inherit; cursor: pointer; font-size: 13px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); transition: background 0.15s; }
+  button:hover { background: var(--bg3); }
+  button.primary { background: var(--info-bg); color: var(--info-text); border-color: transparent; }
+  button.danger { color: var(--danger-text); border-color: var(--danger-border); }
+  input, select, textarea { font-family: inherit; font-size: 14px; padding: 7px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); width: 100%; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--info-text); box-shadow: 0 0 0 2px rgba(24,95,165,0.15); }
+  textarea { resize: vertical; min-height: 70px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .card:hover { border-color: var(--border2); }
+  .badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; display: inline-block; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .metric { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+  .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .metric-val { font-size: 28px; font-weight: 500; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .flex-gap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--text2); font-size: 13px; }
+  .section-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin: 1.5rem 0 10px; }
+  .progress-wrap { height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 12px 0; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+  .clickable { cursor: pointer; }
+  .log-entry { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 0.5px solid var(--border); }
+  .log-entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-bottom: 4px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.3s; min-height: 4px; }
+  .bar-label { font-size: 10px; color: var(--text2); }
+  #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 13px; padding: 8px 18px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+const STORAGE_KEY = 'cf_projects_v1';
+const YEAR = new Date().getFullYear();
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const CATS = ['General','Eléctrico','Mecánico','Civil','Riego','HVAC','Otro'];
+const STATUS = {
+  pendiente:   { label:'Pendiente',   color:'#5F5E5A', bg:'#f1efe8' },
+  en_progreso: { label:'En progreso', color:'#185FA5', bg:'#e6f1fb' },
+  completado:  { label:'Completado',  color:'#3B6D11', bg:'#eaf3de' },
+  en_pausa:    { label:'En pausa',    color:'#BA7517', bg:'#faeeda' },
+};
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmtDate(d) { if (!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function loadProjects() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+function saveProjects(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2000); }
+
+let state = {
+  view: 'dashboard',
+  projects: loadProjects(),
+  selected: null,
+  editProject: null,
+  logText: '',
+  logAutor: '',
+  filterStatus: 'todos',
+  filterCat: 'todas',
+  search: '',
+};
+
+function setState(patch) { Object.assign(state, patch); render(); }
+
+function badge(status) {
+  const s = STATUS[status];
+  return `<span class="badge" style="background:${s.bg};color:${s.color};border:0.5px solid ${s.color}40">${s.label}</span>`;
+}
+
+function progressBar(val) {
+  const pct = Math.min(100, Math.max(0, val||0));
+  const color = pct===100?'#639922':pct>=50?'#185FA5':'#BA7517';
+  return `<div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;background:${color}"></div></div>`;
+}
+
+function renderDashboard() {
+  const p = state.projects;
+  const stats = { total:p.length, en_progreso:p.filter(x=>x.status==='en_progreso').length, completados:p.filter(x=>x.status==='completado').length, pendientes:p.filter(x=>x.status==='pendiente').length };
+  const byMonth = MONTHS.map((m,i) => ({ mes:m, count:p.filter(x=>x.fechaInicio&&parseInt(x.fechaInicio.split('-')[1])===i+1).length }));
+  const maxM = Math.max(...byMonth.map(m=>m.count),1);
+  const recent = p.slice().sort((a,b)=>{
+    const la=(a.log||[]).slice(-1)[0]?.fecha||a.fechaInicio||'';
+    const lb=(b.log||[]).slice(-1)[0]?.fecha||b.fechaInicio||'';
+    return lb.localeCompare(la);
+  }).slice(0,4);
+
+  return `
+  <div class="flex-between" style="margin-bottom:20px">
+    <div><h2>CF Project Tracker</h2><p class="muted">Costa Farms Mantenimiento — ${YEAR}</p></div>
+    <div class="flex-gap">
+      <button onclick="nav('list')">Ver proyectos</button>
+      <button class="primary" onclick="nav('form')">+ Nuevo</button>
+    </div>
+  </div>
+  <div class="grid4" style="margin-bottom:24px">
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-val">${stats.total}</div></div>
+    <div class="metric"><div class="metric-label">En progreso</div><div class="metric-val" style="color:#185FA5">${stats.en_progreso}</div></div>
+    <div class="metric"><div class="metric-label">Completados</div><div class="metric-val" style="color:#3B6D11">${stats.completados}</div></div>
+    <div class="metric"><div class="metric-label">Pendientes</div><div class="metric-val" style="color:#BA7517">${stats.pendientes}</div></div>
+  </div>
+  <div class="section-title">Proyectos iniciados por mes</div>
+  <div class="bar-chart">
+    ${byMonth.map(m=>`<div class="bar-col"><div class="bar" style="height:${Math.max(4,(m.count/maxM)*60)}px;background:${m.count>0?'#378ADD':'var(--bg3)'}"></div><span class="bar-label">${m.mes}</span></div>`).join('')}
+  </div>
+  ${recent.length>0?`
+  <div class="section-title">Actividad reciente</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    ${recent.map(p=>`
+    <div class="card clickable" onclick="nav('detail','${p.id}')" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nombre}</p>
+        <p class="muted" style="font-size:12px">${(p.log||[]).length} entradas en bitácora</p>
+      </div>
+      <div class="flex-gap" style="flex-shrink:0">${badge(p.status)}<span style="font-size:13px;font-weight:500">${p.progreso||0}%</span></div>
+    </div>`).join('')}
+  </div>`:''}`;
+}
+
+function renderList() {
+  const filtered = state.projects.filter(p => {
+    if (state.filterStatus!=='todos' && p.status!==state.filterStatus) return false;
+    if (state.filterCat!=='todas' && p.categoria!==state.filterCat) return false;
+    if (state.search && !p.nombre.toLowerCase().includes(state.search.toLowerCase())) return false;
+    return true;
+  });
+  return `
+  <div class="flex-between" style="margin-bottom:16px">
+    <h2>Proyectos ${YEAR}</h2>
+    <button class="primary" onclick="nav('form')">+ Nuevo proyecto</button>
+  </div>
+  <div class="flex-gap" style="margin-bottom:12px">
+    <input style="max-width:180px" placeholder="Buscar..." value="${state.search}" oninput="setState({search:this.value})" />
+    <select style="width:auto" onchange="setState({filterStatus:this.value})">
+      <option value="todos" ${state.filterStatus==='todos'?'selected':''}>Todos los estados</option>
+      ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${state.filterStatus===k?'selected':''}>${v.label}</option>`).join('')}
+    </select>
+    <select style="width:auto" onchange="setState({filterCat:this.value})">
+      <option value="todas" ${state.filterCat==='todas'?'selected':''}>Todas las categorías</option>
+      ${CATS.map(c=>`<option value="${c}" ${state.filterCat===c?'selected':''}>${c}</option>`).join('')}
+    </select>
+  </div>
+  ${filtered.length===0?`<div class="empty">${state.projects.length===0?'No hay proyectos aún. Crea el primero.':'No se encontraron proyectos con esos filtros.'}</div>`:`
+  <div style="display:flex;flex-direction:column;gap:8px">
+    ${filtered.map(p=>`
+    <div class="card clickable" onclick="nav('detail','${p.id}')">
+      <div class="flex-between" style="margin-bottom:8px">
+        <div>
+          <p style="font-weight:500;font-size:14px;margin-bottom:4px">${p.nombre}</p>
+          <div class="flex-gap">${badge(p.status)}<span style="font-size:11px;color:var(--text2)">${p.categoria}</span></div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--text2);flex-shrink:0">
+          <div>${fmtDate(p.fechaInicio)}</div>${p.fechaFin?`<div>→ ${fmtDate(p.fechaFin)}</div>`:''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">${progressBar(p.progreso)}</div>
+        <span style="font-size:12px;color:var(--text2);min-width:30px">${p.progreso||0}%</span>
+        ${(p.log||[]).length>0?`<span style="font-size:11px;color:var(--text2)">${p.log.length} entradas</span>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`}
+  <div style="margin-top:16px"><button onclick="nav('dashboard')">← Dashboard</button></div>`;
+}
+
+function renderDetail() {
+  const p = state.projects.find(x=>x.id===state.selected);
+  if (!p) { nav('list'); return ''; }
+  const logs = [...(p.log||[])].reverse();
+  return `
+  <button onclick="nav('list')" style="margin-bottom:16px">← Proyectos</button>
+  <div class="card" style="margin-bottom:16px">
+    <div class="flex-between" style="margin-bottom:12px">
+      <div>
+        <h2 style="margin-bottom:4px">${p.nombre}</h2>
+        <div class="flex-gap">${badge(p.status)}<span style="font-size:12px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px">${p.categoria}</span></div>
+      </div>
+      <div class="flex-gap">
+        <button onclick="editProj('${p.id}')">Editar</button>
+        <button class="danger" onclick="deleteProj('${p.id}')">Eliminar</button>
+      </div>
+    </div>
+    ${p.descripcion?`<p style="font-size:14px;color:var(--text2);margin-bottom:12px">${p.descripcion}</p>`:''}
+    <div class="grid2" style="margin-bottom:12px">
+      <div style="font-size:13px"><span class="muted">Inicio: </span>${fmtDate(p.fechaInicio)}</div>
+      <div style="font-size:13px"><span class="muted">Fin: </span>${fmtDate(p.fechaFin)}</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+      <span class="muted">Progreso</span><span style="font-weight:500">${p.progreso||0}%</span>
+    </div>
+    ${progressBar(p.progreso)}
+  </div>
+  <h3 style="margin-bottom:12px">Bitácora de actividades</h3>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <textarea id="logText" placeholder="Describe la actividad realizada...">${state.logText}</textarea>
+      <div style="display:flex;gap:8px">
+        <input id="logAutor" style="flex:1" placeholder="Responsable (team leader, contratista...)" value="${state.logAutor}" />
+        <button class="primary" onclick="addLog('${p.id}')">+ Agregar</button>
+      </div>
+    </div>
+    ${logs.length===0?`<p style="font-size:13px;color:var(--text2);text-align:center;padding:1rem 0">No hay entradas aún.</p>`:`
+    <div>
+      ${logs.map((e,i)=>`
+      <div class="log-entry" ${i===logs.length-1?'style="border-bottom:none;margin-bottom:0;padding-bottom:0"':''}>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:500;color:var(--text2)">${e.autor}</span>
+          <span style="font-size:12px;color:var(--text2)">${fmtDate(e.fecha)}</span>
+        </div>
+        <p style="font-size:14px">${e.texto}</p>
+      </div>`).join('')}
+    </div>`}
+  </div>`;
+}
+
+function renderForm() {
+  const p = state.editProject || {};
+  const isEdit = !!p.id && state.projects.some(x=>x.id===p.id);
+  return `
+  <button onclick="${isEdit?`nav('detail','${p.id}')`:`nav('list')`}" style="margin-bottom:16px">← Volver</button>
+  <h2 style="margin-bottom:1.5rem">${isEdit?'Editar proyecto':'Nuevo proyecto'}</h2>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Nombre del proyecto *</label>
+      <input id="f-nombre" value="${p.nombre||''}" placeholder="Ej: Renovación sistema de riego zona A" />
+    </div>
+    <div>
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Descripción</label>
+      <textarea id="f-desc" placeholder="Detalles del proyecto...">${p.descripcion||''}</textarea>
+    </div>
+    <div class="grid2">
+      <div>
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Categoría</label>
+        <select id="f-cat">${CATS.map(c=>`<option value="${c}" ${p.categoria===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <div>
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Estado</label>
+        <select id="f-status">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${p.status===k?'selected':''}>${v.label}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Fecha inicio</label>
+        <input type="date" id="f-inicio" value="${p.fechaInicio||''}" />
+      </div>
+      <div>
+        <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Fecha fin</label>
+        <input type="date" id="f-fin" value="${p.fechaFin||''}" />
+      </div>
+    </div>
+    <div>
+      <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:4px">Progreso: <span id="prog-val">${p.progreso||0}</span>%</label>
+      <input type="range" min="0" max="100" step="1" value="${p.progreso||0}" oninput="document.getElementById('prog-val').textContent=this.value" id="f-prog" />
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="primary" style="padding:8px 20px;font-size:14px" onclick="submitForm('${isEdit?p.id:''}')">${isEdit?'Guardar cambios':'Crear proyecto'}</button>
+      <button style="padding:8px 20px;font-size:14px" onclick="${isEdit?`nav('detail','${p.id}')`:`nav('list')`}">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (state.view==='dashboard') app.innerHTML = renderDashboard();
+  else if (state.view==='list') app.innerHTML = renderList();
+  else if (state.view==='detail') app.innerHTML = renderDetail();
+  else if (state.view==='form') app.innerHTML = renderForm();
+}
+
+function nav(view, id=null) {
+  state.view = view;
+  if (id) state.selected = id;
+  if (view==='form' && !state.editProject) state.editProject = {};
+  if (view!=='form') state.editProject = null;
+  state.logText = '';
+  state.logAutor = '';
+  render();
+}
+
+function editProj(id) {
+  const p = state.projects.find(x=>x.id===id);
+  state.editProject = { ...p };
+  state.view = 'form';
+  render();
+}
+
+function deleteProj(id) {
+  if (!confirm('¿Eliminar este proyecto?')) return;
+  state.projects = state.projects.filter(x=>x.id!==id);
+  saveProjects(state.projects);
+  nav('list');
+  toast('Proyecto eliminado');
+}
+
+function submitForm(existingId) {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { alert('El nombre es requerido.'); return; }
+  const proj = {
+    id: existingId || genId(),
+    nombre,
+    descripcion: document.getElementById('f-desc').value.trim(),
+    categoria: document.getElementById('f-cat').value,
+    status: document.getElementById('f-status').value,
+    fechaInicio: document.getElementById('f-inicio').value,
+    fechaFin: document.getElementById('f-fin').value,
+    progreso: parseInt(document.getElementById('f-prog').value),
+    log: existingId ? (state.projects.find(x=>x.id===existingId)?.log||[]) : [],
+  };
+  if (existingId) {
+    state.projects = state.projects.map(x=>x.id===existingId?proj:x);
+  } else {
+    state.projects = [...state.projects, proj];
+  }
+  saveProjects(state.projects);
+  state.selected = proj.id;
+  state.view = 'detail';
+  state.editProject = null;
+  render();
+  toast(existingId ? 'Proyecto actualizado' : 'Proyecto creado');
+}
+
+function addLog(projId) {
+  const txt = document.getElementById('logText').value.trim();
+  if (!txt) return;
+  const autor = document.getElementById('logAutor').value.trim() || '—';
+  const entry = { id: genId(), fecha: new Date().toISOString().slice(0,10), texto: txt, autor };
+  state.projects = state.projects.map(p => p.id===projId ? { ...p, log:[...(p.log||[]),entry] } : p);
+  saveProjects(state.projects);
+  state.logText = '';
+  state.logAutor = '';
+  render();
+  toast('Entrada agregada');
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+render();
+</script>
+</body>
+</html>
